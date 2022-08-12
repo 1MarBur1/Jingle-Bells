@@ -38,7 +38,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.currentData = []
         ser.write(bytearray([0xFF]))
-        self.currentData = self.get_data()
+        self.get_data()
 
         self.temp = QLabel("Температура воздуха: " + str(self.currentData[3]) + "°C")
         self.humidity = QLabel("Влажность воздуха: " + str(self.currentData[-3]) + "%")
@@ -90,7 +90,7 @@ class MainWindow(QMainWindow):
         container = QWidget()
         container.setLayout(layout)
 
-        self.setWindowTitle("Умная теплица")
+        self.setWindowTitle("Умный дом")
 
         self.timer = QTimer()
         self.timer.setInterval(1000)
@@ -101,7 +101,7 @@ class MainWindow(QMainWindow):
 
     def updateData(self):
         ser.write(bytearray([0xFF]))
-        self.currentData = self.get_data()
+        self.get_data()
         self.reloadSensors()
 
     def reloadSensors(self):
@@ -117,18 +117,18 @@ class MainWindow(QMainWindow):
         _writeRGB.append(_currentColor.blue())
 
         ser.write(_writeRGB)
-        self.currentData = self.get_data()
+        self.get_data()
         self.color.show()
         
     def onsignalButtonClick(self):
         ser.write(bytearray([0xA0, 0x1]))
+        self.get_data()
         self.reloadSensors()
-        self.currentData = self.get_data()
         self.signalButton.setText("Включить сирену" if self.currentData[-6] == 0 else "Выключить сирену")
 
     def onWindButtonClick(self):
         ser.write(bytearray([0xA1, 0x1]))
-        self.currentData = self.get_data()
+        self.get_data()
         self.reloadSensors()
         self.windButton.setText("Включить вентилятор" if self.currentData[-2] == 0 else "Выключить вентилятор")
 
@@ -140,17 +140,19 @@ class MainWindow(QMainWindow):
             ser.write(bytearray([0xA2, 0x20]))
             self.doorButton.setText("Закрыть дверь")
 
-        self.currentData = self.get_data()
+        self.get_data()
 
     def onMelodyButtonClick(self):
         ser.write(bytearray([0xA6, 0x1]))
 
     def get_data (self):
         sleep(0.1)
-        _currentData = str(ser.read_all())[2:-5]
-        currentDataList = list(map(float, _currentData.split('|')))
-        print(currentDataList)
-        return currentDataList
+        _currentData = str(ser.read_all())
+        _currentData = _currentData[2:_currentData.find('\\r\\n')]
+        if (_currentData!=''):
+            currentDataList = list(map(float, _currentData.split('|')))
+            self.currentData = currentDataList
+            print(currentDataList)
 
 
 app = QApplication(sys.argv)
